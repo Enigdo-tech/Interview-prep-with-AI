@@ -7,14 +7,16 @@
     <title>Enigdos ATS Resume Rewriter</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
     <!-- PDF & DOCX Parsing -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
-    <!-- PDF Generation -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- PDF Generation - ATS-Friendly -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <!-- Google Generative AI SDK -->
     <script type="importmap">
     {
@@ -28,45 +30,49 @@
 <body>
     <div class="background-gradient"></div>
 
-    <main class="container">
-        <header class="header">
-            <div class="logo">
-                <h1>Enigdos AI Resume Optimizer</h1>
-            </div>
-            <p class="subtitle">AI-Powered Resume Optimization & Interview Prep</p>
-        </header>
-
-        <!-- API Configuration -->
-        <div class="api-config-section">
-            <div class="card glass-panel">
-                <div class="card-header">
-                    <h2>⚙️ Gemini API Configuration</h2>
-                    <p>Enter your Google Gemini API key to enable AI-powered features</p>
-                </div>
-                <div class="api-input-wrapper">
-                    <input type="password" id="api-key-input" placeholder="Enter your Gemini API Key (AIza...)" />
-                    <button id="save-api-key-btn" class="secondary-button">Save Key</button>
-                    <span id="api-status" class="api-status"></span>
-                </div>
-                <p class="api-help">Get your free API key at <a href="https://aistudio.google.com/app/apikey"
-                        target="_blank">Google AI Studio</a></p>
-            </div>
+    <nav class="navbar glass-panel">
+        <div class="logo">
+            <span class="logo-icon">✨</span>
+            <h1>Enigdos <span class="gradient-text">ATS Rewriter</span></h1>
         </div>
+        <div class="nav-links">
+            <a href="#" class="active">Optimizer</a>
+            <a href="list-models.html">Models</a>
+            <a href="test-api.html">Test API</a>
+        </div>
+    </nav>
 
+    <main class="container">
+        <!-- Main Dashboard -->
         <div class="grid-layout">
             <!-- Input Section -->
             <section class="input-section">
-                <!-- Step 1: Resume -->
+                <!-- API Key Config -->
+                <div class="card glass-panel api-config-card">
+                    <div class="card-header">
+                        <h2>🔑 Gemini API Configuration</h2>
+                    </div>
+                    <div class="api-input-wrapper">
+                        <input type="password" id="api-key-input" placeholder="Enter your Gemini API Key">
+                        <button id="save-api-key" class="secondary-button">Save Key</button>
+                    </div>
+                    <div id="api-status" class="status-message"></div>
+                </div>
+
+                <!-- Step 1: Upload Resume -->
                 <div class="card glass-panel">
                     <div class="card-header">
-                        <h2>1. Existing Resume</h2>
-                        <p>Upload your current resume (PDF/DOCX/TXT).</p>
+                        <h2>1. Upload Your Resume</h2>
+                        <p>Supports PDF, DOCX, or TXT</p>
                     </div>
                     <div class="upload-area" id="drop-zone">
-                        <input type="file" id="file-input" accept=".pdf,.doc,.docx,.txt" hidden>
-                        <div class="upload-content">
-                            <p class="upload-text" id="file-name-display">Drag & drop or click to upload</p>
-                        </div>
+                        <div class="upload-icon">📄</div>
+                        <p>Drag & drop or click to upload</p>
+                        <input type="file" id="resume-upload" accept=".pdf,.docx,.txt" hidden>
+                    </div>
+                    <div id="file-info" class="file-info hidden">
+                        <span id="file-name">filename.pdf</span>
+                        <button id="remove-file" class="icon-button">✕</button>
                     </div>
                 </div>
 
@@ -125,38 +131,232 @@
                 </div>
 
                 <!-- Optimized Resume -->
-                <div class="card glass-panel full-height">
+                <div class="card glass-panel" id="optimized-resume-card" style="display: none;">
                     <div class="card-header">
                         <h2>📄 Optimized Resume</h2>
-                        <div class="actions">
-                            <button id="download-btn" class="secondary-button hidden">Download PDF</button>
+                        <div class="header-actions">
+                            <button id="download-btn" class="primary-button small">Download PDF</button>
                         </div>
                     </div>
-
-                    <div id="empty-state" class="empty-state">
-                        <p>Upload a resume and JD to see the AI-optimized result.</p>
-                    </div>
-
-                    <div id="output-container" class="hidden">
-                        <!-- Summary of Changes -->
-                        <div class="optimization-summary">
-                            <h3>AI Optimization Report</h3>
-                            <p><strong>Top Keywords Integrated:</strong> <span id="keywords-list"></span></p>
-                            <p><em>Note: Bullet points have been intelligently rewritten by AI to match the job
-                                    requirements.</em></p>
-                        </div>
-
-                        <!-- Resume Preview -->
-                        <div id="resume-preview" class="resume-preview">
-                            <!-- Dynamic Content -->
-                        </div>
-                    </div>
+                    <div id="resume-preview" class="resume-preview"></div>
                 </div>
             </section>
         </div>
     </main>
 
-    <script src="script.js?v=9"></script>
+    <!-- Interview Practice Screens -->
+
+    <!-- Selection Screen -->
+    <div class="screen" id="selectionScreen">
+        <div class="selection-container">
+            <h2 class="section-title">Choose Your Interview Round</h2>
+            <p class="section-subtitle">Select the type of interview you want to practice for</p>
+
+            <div class="interview-types">
+                <div class="interview-card" data-type="screening">
+                    <div class="card-badge">Level 1</div>
+                    <div class="card-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                    </div>
+                    <h3>Screening Round</h3>
+                    <p>Basic HR questions to assess cultural fit and general qualifications</p>
+                    <ul class="card-features">
+                        <li>General HR questions</li>
+                        <li>Cultural fit assessment</li>
+                        <li>5 questions</li>
+                    </ul>
+                    <button class="select-button" onclick="startInterview('screening')">Select Round</button>
+                </div>
+
+                <div class="interview-card" data-type="manager">
+                    <div class="card-badge" style="background: var(--primary); color: white;">Recommended</div>
+                    <div class="card-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M2 20h.01" />
+                            <path d="M7 20v-4" />
+                            <path d="M12 20v-8" />
+                            <path d="M17 20V8" />
+                            <path d="M22 4v16" />
+                        </svg>
+                    </div>
+                    <h3>Manager Round</h3>
+                    <p>Technical and role-specific questions based on your Job Description</p>
+                    <ul class="card-features">
+                        <li>Job-specific questions</li>
+                        <li>Technical assessment</li>
+                        <li>AI-generated from JD</li>
+                        <li>5 questions</li>
+                    </ul>
+                    <button class="select-button" onclick="startInterview('manager')">Select Round</button>
+                </div>
+
+                <div class="interview-card" data-type="team">
+                    <div class="card-badge">Level 3</div>
+                    <div class="card-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                    </div>
+                    <h3>Team Round</h3>
+                    <p>Collaboration and experience-focused questions with team scenarios</p>
+                    <ul class="card-features">
+                        <li>Collaboration scenarios</li>
+                        <li>Team dynamics</li>
+                        <li>6 questions</li>
+                    </ul>
+                    <button class="select-button" onclick="startInterview('team')">Select Round</button>
+                </div>
+            </div>
+
+            <button class="secondary-button" onclick="showDashboard()" style="margin-top: 2rem; width: 100%;">Back to
+                Dashboard</button>
+        </div>
+    </div>
+
+    <!-- Interview Screen -->
+    <div class="screen" id="interviewScreen">
+        <div class="interview-container">
+            <div class="progress-section">
+                <div class="progress-header">
+                    <span class="progress-label">Question <span id="currentQuestionNum">1</span> of <span
+                            id="totalQuestionsNum">5</span></span>
+                    <span class="progress-percentage" id="progressPercentage">0%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+            </div>
+
+            <div class="question-card">
+                <div class="question-header">
+                    <span class="question-type" id="questionTypeBadge">Screening</span>
+                    <div class="timer" id="timer">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M12 6v6l4 2" />
+                        </svg>
+                        <span id="timerValue">00:00</span>
+                    </div>
+                </div>
+                <h3 class="question-text" id="questionText"></h3>
+            </div>
+
+            <div class="star-guide">
+                <button class="star-toggle" onclick="toggleStarGuide()">
+                    <span>💡 STAR Method Guide</span>
+                </button>
+                <div class="star-content" id="starContent">
+                    <div class="star-item">
+                        <div class="star-letter">S</div>
+                        <div>
+                            <h4>Situation</h4>
+                            <p>Set the scene and give context.</p>
+                        </div>
+                    </div>
+                    <div class="star-item">
+                        <div class="star-letter">T</div>
+                        <div>
+                            <h4>Task</h4>
+                            <p>Explain your role and responsibility.</p>
+                        </div>
+                    </div>
+                    <div class="star-item">
+                        <div class="star-letter">A</div>
+                        <div>
+                            <h4>Action</h4>
+                            <p>Describe the specific steps you took.</p>
+                        </div>
+                    </div>
+                    <div class="star-item">
+                        <div class="star-letter">R</div>
+                        <div>
+                            <h4>Result</h4>
+                            <p>Share the outcomes and impact.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="answer-section">
+                <button class="mic-button" id="micButton" onclick="toggleRecording()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                        <path d="M12 19v4" />
+                        <path d="M8 23h8" />
+                    </svg>
+                    <span id="micStatus">Tap to Speak</span>
+                </button>
+
+                <textarea id="answerText" placeholder="Your answer will appear here..." rows="6"
+                    style="width: 100%; padding: 1rem; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);"></textarea>
+
+                <div class="answer-actions">
+                    <button class="secondary-button" onclick="skipQuestion()">Skip</button>
+                    <button class="primary-button" onclick="submitAnswer()">Submit Answer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Screen -->
+    <div class="screen" id="resultsScreen">
+        <div class="results-container">
+            <div class="results-hero">
+                <div class="trophy-animation">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+                        <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+                        <path d="M4 22h16" />
+                        <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
+                        <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
+                        <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+                    </svg>
+                </div>
+                <h2>Interview Complete!</h2>
+                <p>Great job! Here's how you performed</p>
+            </div>
+
+            <div class="results-stats">
+                <div class="result-stat">
+                    <span class="stat-number" id="answeredCount">0</span>
+                    <span class="stat-text">Questions Answered</span>
+                </div>
+                <div class="result-stat">
+                    <span class="stat-number" id="totalTime">0m</span>
+                    <span class="stat-text">Total Time</span>
+                </div>
+                <div class="result-stat">
+                    <span class="stat-number" id="pointsEarned">0</span>
+                    <span class="stat-text">Points Earned</span>
+                </div>
+            </div>
+
+            <div class="feedback-section">
+                <h3>Detailed Feedback</h3>
+                <div class="feedback-item">
+                    <h4>Strengths</h4>
+                    <ul id="feedbackStrengths"></ul>
+                </div>
+                <div class="feedback-item">
+                    <h4>Areas for Improvement</h4>
+                    <ul id="feedbackImprovements"></ul>
+                </div>
+            </div>
+
+            <button class="primary-button" onclick="showDashboard()" style="width: 100%;">Back to
+                Dashboard</button>
+        </div>
+    </div>
+
+    <script src="script.js?v=11"></script>
 </body>
 
 </html>

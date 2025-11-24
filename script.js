@@ -1,22 +1,15 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- Elements ---
     const dropZone = document.getElementById('drop-zone');
-    const fileInput = document.getElementById('file-input');
-    const fileNameDisplay = document.getElementById('file-name-display');
+    const fileInput = document.getElementById('resume-upload');
+    const fileInfo = document.getElementById('file-info');
+    const fileNameDisplay = document.getElementById('file-name');
+    const removeFileBtn = document.getElementById('remove-file');
+
     const jdInput = document.getElementById('jd-input');
     const processBtn = document.getElementById('process-btn');
     const btnText = processBtn.querySelector('.btn-text');
     const btnLoader = processBtn.querySelector('.btn-loader');
-    const emptyState = document.getElementById('empty-state');
-    const outputContainer = document.getElementById('output-container');
-    const resumePreview = document.getElementById('resume-preview');
-    const keywordsList = document.getElementById('keywords-list');
-    const downloadBtn = document.getElementById('download-btn');
-
-    // API Configuration Elements
-    const apiKeyInput = document.getElementById('api-key-input');
-    const saveApiKeyBtn = document.getElementById('save-api-key-btn');
-    const apiStatus = document.getElementById('api-status');
 
     // New AI-powered elements
     const atsScoreCard = document.getElementById('ats-score-card');
@@ -26,6 +19,26 @@ document.addEventListener('DOMContentLoaded', () => {
     const interviewQuestionsList = document.getElementById('interview-questions-list');
     const suggestionsCard = document.getElementById('suggestions-card');
     const suggestionsList = document.getElementById('suggestions-list');
+    const optimizedResumeCard = document.getElementById('optimized-resume-card');
+    const resumePreview = document.getElementById('resume-preview');
+    const downloadBtn = document.getElementById('download-btn');
+
+    // Add keywordsList element reference (it was missing)
+    let keywordsList = document.getElementById('keywords-list');
+    // If it doesn't exist in DOM, create it dynamically inside the ATS card for robustness
+    if (!keywordsList && atsAnalysis) {
+        const kwContainer = document.createElement('div');
+        kwContainer.className = 'keywords-container';
+        kwContainer.style.marginTop = '1rem';
+        kwContainer.innerHTML = '<strong>Top Keywords:</strong> <div id="keywords-list" class="keywords-list"></div>';
+        atsAnalysis.parentNode.appendChild(kwContainer);
+        keywordsList = document.getElementById('keywords-list');
+    }
+
+    // API Configuration Elements
+    const apiKeyInput = document.getElementById('api-key-input');
+    const saveApiKeyBtn = document.getElementById('save-api-key');
+    const apiStatus = document.getElementById('api-status');
 
     let currentFile = null;
     let apiKey = localStorage.getItem('gemini_api_key') || '';
@@ -34,7 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (apiKey) {
         apiKeyInput.value = apiKey;
         apiStatus.textContent = '✓ API Key Saved';
-        apiStatus.className = 'api-status success';
+        apiStatus.className = 'status-message success';
     }
 
     // --- Event Listeners ---
@@ -47,6 +60,8 @@ document.addEventListener('DOMContentLoaded', () => {
         handleFile(e.dataTransfer.files[0]);
     });
     fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
+    removeFileBtn.addEventListener('click', removeFile);
+
     jdInput.addEventListener('input', updateState);
 
     processBtn.addEventListener('click', processResume);
@@ -59,20 +74,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const key = apiKeyInput.value.trim();
         if (!key) {
             apiStatus.textContent = '✗ Please enter an API key';
-            apiStatus.className = 'api-status error';
+            apiStatus.className = 'status-message error';
             return;
         }
 
         if (!key.startsWith('AIza')) {
             apiStatus.textContent = '✗ Invalid API key format';
-            apiStatus.className = 'api-status error';
+            apiStatus.className = 'status-message error';
             return;
         }
 
         localStorage.setItem('gemini_api_key', key);
         apiKey = key;
         apiStatus.textContent = '✓ API Key Saved Successfully';
-        apiStatus.className = 'api-status success';
+        apiStatus.className = 'status-message success';
     }
 
     // --- Core Logic ---
@@ -80,7 +95,24 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!file) return;
         currentFile = file;
         fileNameDisplay.textContent = file.name;
-        fileNameDisplay.classList.add('highlight');
+
+        // Show file info, hide drop zone text if needed or just show below
+        dropZone.style.display = 'none';
+        fileInfo.classList.remove('hidden');
+        fileInfo.style.display = 'flex';
+
+        updateState();
+    }
+
+    function removeFile(e) {
+        e.stopPropagation();
+        currentFile = null;
+        fileInput.value = '';
+
+        dropZone.style.display = 'flex';
+        fileInfo.classList.add('hidden');
+        fileInfo.style.display = 'none';
+
         updateState();
     }
 
@@ -153,12 +185,38 @@ JavaScript, Python, React, Node.js, AWS, Docker`;
             // Display Optimized Resume
             displayOptimizedResume(optimizedResume);
 
-            // Show all sections
-            outputContainer.classList.remove('hidden');
+            // --- UI Transition: Input -> Output ---
+
+            // Hide Input Section
+            document.querySelector('.input-section').style.display = 'none';
+
+            // Show Output Section
+            const outputSection = document.querySelector('.output-section');
+            outputSection.style.display = 'block';
+            outputSection.classList.remove('hidden');
+
+            // Ensure Download Button is visible
+            downloadBtn.style.display = 'inline-flex';
             downloadBtn.classList.remove('hidden');
+
+            // Add "Start Over" button if not present
+            if (!document.getElementById('start-over-btn')) {
+                const navLinks = document.querySelector('.nav-links');
+                const startOverBtn = document.createElement('button');
+                startOverBtn.id = 'start-over-btn';
+                startOverBtn.className = 'secondary-button small';
+                startOverBtn.textContent = 'Start New Analysis';
+                startOverBtn.onclick = () => window.location.reload();
+                navLinks.appendChild(startOverBtn);
+            }
+
             emptyState.classList.add('hidden');
 
             setLoading(false);
+
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
         } catch (err) {
             console.error(err);
             alert("Error processing resume: " + err.message);
@@ -322,24 +380,260 @@ Start directly with the HTML tags.`;
 
         atsAnalysis.innerHTML = `<p>${atsResult.analysis}</p>`;
 
-        // Display keywords
-        keywordsList.innerHTML = atsResult.keywords.slice(0, 5).map(k =>
-            `<span class="skill-tag">${k}</span>`
-        ).join('');
+        // Display keywords if element exists
+        if (keywordsList && atsResult.keywords) {
+            keywordsList.innerHTML = atsResult.keywords.slice(0, 5).map(k =>
+                `<span class="skill-tag">${k}</span>`
+            ).join('');
+        }
     }
 
     function displayInterviewQuestions(questions) {
         if (questions.length === 0) return;
 
         interviewQuestionsCard.style.display = 'block';
-        interviewQuestionsList.innerHTML = questions.map((q, i) => `
+        interviewQuestionsList.innerHTML = questions.map(q => `
             <div class="question-item">
-                <div class="question-number">Question ${i + 1}</div>
                 <div class="question-text">${q}</div>
             </div>
         `).join('');
+
+        // Add "Start Practice" button if not already present
+        if (!document.getElementById('startPracticeBtn')) {
+            const btn = document.createElement('button');
+            btn.id = 'startPracticeBtn';
+            btn.className = 'primary-button';
+            btn.style.marginTop = '1rem';
+            btn.style.width = '100%';
+            btn.innerHTML = '<span>Start Interview Practice</span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>';
+            btn.onclick = startInterviewPractice;
+            interviewQuestionsCard.appendChild(btn);
+        }
+
+        // Store questions for Manager round
+        window.aiQuestions = questions;
     }
 
+    // --- Interview Practice Logic ---
+
+    // State
+    let interviewState = {
+        questions: [],
+        currentIndex: 0,
+        answers: [],
+        startTime: null,
+        questionStartTime: null,
+        timerInterval: null,
+        recognition: null,
+        isRecording: false
+    };
+
+    window.startInterviewPractice = function () {
+        document.querySelector('.grid-layout').style.display = 'none';
+        document.querySelector('.output-section').style.display = 'none';
+        document.getElementById('selectionScreen').classList.add('active');
+        window.scrollTo(0, 0);
+    };
+
+    window.showDashboard = function () {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.querySelector('.grid-layout').style.display = 'grid';
+        document.querySelector('.output-section').style.display = 'block';
+        window.scrollTo(0, 0);
+    };
+
+    window.startInterview = function (type) {
+        interviewState.questions = [];
+        interviewState.currentIndex = 0;
+        interviewState.answers = [];
+        interviewState.startTime = Date.now();
+
+        // Select questions based on type
+        if (type === 'manager' && window.aiQuestions && window.aiQuestions.length > 0) {
+            interviewState.questions = window.aiQuestions;
+        } else if (type === 'screening') {
+            interviewState.questions = [
+                "Tell me about yourself and your background.",
+                "Why are you interested in this position?",
+                "What are your greatest strengths and weaknesses?",
+                "Describe a challenging work situation and how you overcame it.",
+                "Where do you see yourself in 5 years?"
+            ];
+        } else if (type === 'team') {
+            interviewState.questions = [
+                "Describe a time you had to work with a difficult team member.",
+                "How do you handle disagreements within a team?",
+                "Tell me about a successful team project you contributed to.",
+                "How do you support your colleagues?",
+                "What role do you typically take in a team setting?"
+            ];
+        } else {
+            // Fallback
+            interviewState.questions = window.aiQuestions || ["Tell me about yourself."];
+        }
+
+        // Update UI
+        document.getElementById('selectionScreen').classList.remove('active');
+        document.getElementById('interviewScreen').classList.add('active');
+        document.getElementById('totalQuestionsNum').textContent = interviewState.questions.length;
+        document.getElementById('questionTypeBadge').textContent = type.charAt(0).toUpperCase() + type.slice(1) + ' Round';
+
+        displayQuestion();
+    };
+
+    function displayQuestion() {
+        const question = interviewState.questions[interviewState.currentIndex];
+        document.getElementById('questionText').textContent = question;
+        document.getElementById('currentQuestionNum').textContent = interviewState.currentIndex + 1;
+        document.getElementById('answerText').value = '';
+
+        const progress = (interviewState.currentIndex / interviewState.questions.length) * 100;
+        document.getElementById('progressFill').style.width = `${progress}%`;
+        document.getElementById('progressPercentage').textContent = `${Math.round(progress)}%`;
+
+        interviewState.questionStartTime = Date.now();
+        startTimer();
+    }
+
+    function startTimer() {
+        if (interviewState.timerInterval) clearInterval(interviewState.timerInterval);
+
+        const timerDisplay = document.getElementById('timerValue');
+        interviewState.timerInterval = setInterval(() => {
+            const elapsed = Math.floor((Date.now() - interviewState.questionStartTime) / 1000);
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+            timerDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }, 1000);
+    }
+
+    window.submitAnswer = function () {
+        const answer = document.getElementById('answerText').value.trim();
+        if (!answer) {
+            alert('Please provide an answer.');
+            return;
+        }
+
+        saveAnswer(answer);
+        nextQuestion();
+    };
+
+    window.skipQuestion = function () {
+        saveAnswer('[Skipped]');
+        nextQuestion();
+    };
+
+    function saveAnswer(text) {
+        const timeSpent = Math.floor((Date.now() - interviewState.questionStartTime) / 1000);
+        interviewState.answers.push({
+            question: interviewState.questions[interviewState.currentIndex],
+            answer: text,
+            timeSpent: timeSpent
+        });
+    }
+
+    function nextQuestion() {
+        interviewState.currentIndex++;
+        if (interviewState.currentIndex < interviewState.questions.length) {
+            displayQuestion();
+        } else {
+            finishInterview();
+        }
+    }
+
+    function finishInterview() {
+        clearInterval(interviewState.timerInterval);
+        document.getElementById('interviewScreen').classList.remove('active');
+        document.getElementById('resultsScreen').classList.add('active');
+
+        // Calculate stats
+        const totalTime = Math.floor((Date.now() - interviewState.startTime) / 1000);
+        const answered = interviewState.answers.filter(a => a.answer !== '[Skipped]').length;
+
+        // Simple point calculation
+        let points = 0;
+        interviewState.answers.forEach(a => {
+            if (a.answer !== '[Skipped]') {
+                points += 10; // Base points
+                if (a.answer.length > 200) points += 5; // Length bonus
+                if (a.timeSpent < 180) points += 5; // Time bonus
+            }
+        });
+
+        document.getElementById('answeredCount').textContent = answered;
+        document.getElementById('totalTime').textContent = `${Math.floor(totalTime / 60)}m ${totalTime % 60}s`;
+        document.getElementById('pointsEarned').textContent = points;
+
+        // Generate feedback
+        const strengths = [];
+        const improvements = [];
+
+        if (points > 50) strengths.push("Strong engagement with questions");
+        if (answered === interviewState.questions.length) strengths.push("Completed all questions");
+
+        if (answered < interviewState.questions.length) improvements.push(`Skipped ${interviewState.questions.length - answered} questions`);
+        if (points < 50) improvements.push("Try to provide more detailed answers");
+
+        document.getElementById('feedbackStrengths').innerHTML = strengths.map(s => `<li>${s}</li>`).join('') || '<li>Keep practicing!</li>';
+        document.getElementById('feedbackImprovements').innerHTML = improvements.map(s => `<li>${s}</li>`).join('') || '<li>Great job!</li>';
+    }
+
+    window.toggleStarGuide = function () {
+        document.getElementById('starContent').classList.toggle('expanded');
+    };
+
+    // Speech Recognition
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        interviewState.recognition = new SpeechRecognition();
+        interviewState.recognition.continuous = true;
+        interviewState.recognition.interimResults = true;
+
+        interviewState.recognition.onresult = (event) => {
+            let finalTranscript = '';
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                if (event.results[i].isFinal) {
+                    finalTranscript += event.results[i][0].transcript;
+                }
+            }
+            if (finalTranscript) {
+                const textarea = document.getElementById('answerText');
+                textarea.value += (textarea.value ? ' ' : '') + finalTranscript;
+            }
+        };
+
+        interviewState.recognition.onend = () => {
+            interviewState.isRecording = false;
+            updateMicUI(false);
+        };
+    }
+
+    window.toggleRecording = function () {
+        if (!interviewState.recognition) {
+            alert('Speech recognition not supported in this browser.');
+            return;
+        }
+
+        if (interviewState.isRecording) {
+            interviewState.recognition.stop();
+        } else {
+            interviewState.recognition.start();
+            interviewState.isRecording = true;
+            updateMicUI(true);
+        }
+    };
+
+    function updateMicUI(isRecording) {
+        const btn = document.getElementById('micButton');
+        const status = document.getElementById('micStatus');
+        if (isRecording) {
+            btn.classList.add('recording');
+            status.textContent = 'Listening...';
+        } else {
+            btn.classList.remove('recording');
+            status.textContent = 'Tap to Speak';
+        }
+    }
     function displaySuggestions(suggestions) {
         if (suggestions.length === 0) return;
 
@@ -365,6 +659,11 @@ Start directly with the HTML tags.`;
         }
 
         resumePreview.innerHTML = cleanHtml;
+
+        // Explicitly show the card and button
+        optimizedResumeCard.style.display = 'block';
+        downloadBtn.style.display = 'inline-flex';
+        downloadBtn.classList.remove('hidden');
     }
 
     // --- PDF/Text Processing ---
@@ -411,64 +710,134 @@ Start directly with the HTML tags.`;
         // Show loading state
         downloadBtn.disabled = true;
         const originalText = downloadBtn.textContent;
-        downloadBtn.textContent = 'Generating PDF...';
+        downloadBtn.textContent = 'Generating ATS-Friendly PDF...';
 
-        // Create a clean clone of the resume for PDF generation
-        const clone = element.cloneNode(true);
-        clone.style.cssText = `
-            background: white;
-            color: #000;
-            padding: 40px;
-            font-family: Georgia, 'Times New Roman', serif;
-            line-height: 1.6;
-            max-width: 8.5in;
-            margin: 0 auto;
-        `;
-
-        // Create temporary container
-        const tempContainer = document.createElement('div');
-        tempContainer.style.cssText = 'position: absolute; left: -9999px; top: 0;';
-        tempContainer.appendChild(clone);
-        document.body.appendChild(tempContainer);
-
-        const opt = {
-            margin: [0.5, 0.5, 0.5, 0.5],
-            filename: `Optimized_Resume_${new Date().toISOString().split('T')[0]}.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: {
-                scale: 2,
-                useCORS: true,
-                logging: false,
-                backgroundColor: '#ffffff',
-                windowWidth: 816, // 8.5 inches at 96 DPI
-                windowHeight: 1056 // 11 inches at 96 DPI
-            },
-            jsPDF: {
-                unit: 'in',
-                format: 'letter',
+        try {
+            // Extract text content from HTML for ATS-friendly PDF
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({
                 orientation: 'portrait',
-                compress: true
-            },
-            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-        };
-
-        html2pdf()
-            .set(opt)
-            .from(clone)
-            .save()
-            .then(() => {
-                // Cleanup
-                document.body.removeChild(tempContainer);
-                downloadBtn.disabled = false;
-                downloadBtn.textContent = originalText;
-                console.log('✅ PDF downloaded successfully');
-            })
-            .catch((error) => {
-                console.error('❌ PDF generation error:', error);
-                alert('Error generating PDF. Please try again.');
-                document.body.removeChild(tempContainer);
-                downloadBtn.disabled = false;
-                downloadBtn.textContent = originalText;
+                unit: 'pt',
+                format: 'letter'
             });
+
+            // Page dimensions
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const pageHeight = doc.internal.pageSize.getHeight();
+            const margin = 40;
+            const maxWidth = pageWidth - (margin * 2);
+            let yPosition = margin;
+
+            // Helper function to add text with word wrap
+            function addText(text, fontSize, isBold = false, isItalic = false) {
+                if (!text || text.trim() === '') return;
+
+                doc.setFontSize(fontSize);
+                doc.setFont('helvetica', isBold ? 'bold' : (isItalic ? 'italic' : 'normal'));
+
+                const lines = doc.splitTextToSize(text.trim(), maxWidth);
+
+                lines.forEach(line => {
+                    // Check if we need a new page
+                    if (yPosition > pageHeight - margin) {
+                        doc.addPage();
+                        yPosition = margin;
+                    }
+
+                    doc.text(line, margin, yPosition);
+                    yPosition += fontSize * 1.2;
+                });
+            }
+
+            // Helper function to add spacing
+            function addSpace(points = 10) {
+                yPosition += points;
+            }
+
+            // Parse HTML content
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(element.innerHTML, 'text/html');
+
+            // Extract and format content
+            const processNode = (node) => {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    const text = node.textContent.trim();
+                    if (text) {
+                        addText(text, 11);
+                    }
+                } else if (node.nodeType === Node.ELEMENT_NODE) {
+                    const tagName = node.tagName.toLowerCase();
+
+                    switch (tagName) {
+                        case 'h1':
+                            addSpace(5);
+                            addText(node.textContent, 18, true);
+                            addSpace(10);
+                            break;
+                        case 'h2':
+                            addSpace(12);
+                            addText(node.textContent.toUpperCase(), 13, true);
+                            addSpace(8);
+                            // Add a line under section headers
+                            doc.setLineWidth(0.5);
+                            doc.line(margin, yPosition - 5, pageWidth - margin, yPosition - 5);
+                            addSpace(5);
+                            break;
+                        case 'h3':
+                            addSpace(8);
+                            addText(node.textContent, 12, true);
+                            addSpace(5);
+                            break;
+                        case 'p':
+                            addText(node.textContent, 11);
+                            addSpace(5);
+                            break;
+                        case 'ul':
+                            Array.from(node.children).forEach(li => {
+                                if (li.tagName.toLowerCase() === 'li') {
+                                    const bulletText = '• ' + li.textContent.trim();
+                                    addText(bulletText, 11);
+                                    addSpace(3);
+                                }
+                            });
+                            addSpace(5);
+                            break;
+                        case 'strong':
+                        case 'b':
+                            addText(node.textContent, 11, true);
+                            break;
+                        case 'em':
+                        case 'i':
+                            addText(node.textContent, 11, false, true);
+                            break;
+                        case 'br':
+                            addSpace(5);
+                            break;
+                        default:
+                            // Process children for other elements
+                            Array.from(node.childNodes).forEach(processNode);
+                            break;
+                    }
+                }
+            };
+
+            // Process all content
+            Array.from(htmlDoc.body.childNodes).forEach(processNode);
+
+            // Save the PDF
+            const filename = `ATS_Optimized_Resume_${new Date().toISOString().split('T')[0]}.pdf`;
+            doc.save(filename);
+
+            // Reset button state
+            downloadBtn.disabled = false;
+            downloadBtn.textContent = originalText;
+            console.log('✅ ATS-friendly PDF downloaded successfully');
+
+        } catch (error) {
+            console.error('❌ PDF generation error:', error);
+            alert('Error generating PDF. Please try again.');
+            downloadBtn.disabled = false;
+            downloadBtn.textContent = originalText;
+        }
     }
 });
