@@ -267,19 +267,37 @@ Respond in JSON format:
     }
 
     async function optimizeResumeWithAI(resumeText, jdText) {
-        const prompt = `You are a professional resume writer. Optimize the following resume to better match the job description. Focus on:
-1. Rewriting bullet points to include relevant keywords
-2. Emphasizing relevant experience
-3. Using strong action verbs
-4. Maintaining the original structure and format
+        const prompt = `You are a professional resume writer and ATS optimization expert. 
 
-Resume:
+TASK: Rewrite the resume below to better match the job description while maintaining the candidate's authentic experience.
+
+RESUME:
 ${resumeText}
 
-Job Description:
+JOB DESCRIPTION:
 ${jdText}
 
-Return the optimized resume in HTML format with proper structure (use h1 for name, h2 for sections, ul/li for bullet points, etc.). Make it look professional.`;
+REQUIREMENTS:
+1. Rewrite bullet points to include relevant keywords from the job description
+2. Emphasize experience that matches the job requirements
+3. Use strong action verbs (Led, Developed, Implemented, Managed, etc.)
+4. Keep the same structure (name, contact, experience, education, skills)
+5. Maintain all dates, job titles, and company names exactly as they are
+6. Make bullet points quantifiable where possible
+
+OUTPUT FORMAT:
+Return ONLY clean HTML (no markdown, no code blocks, no explanations).
+Use this structure:
+- <h1> for the candidate's name
+- <p> for contact information
+- <h2> for section headers (EXPERIENCE, EDUCATION, SKILLS, etc.)
+- <h3> for job titles with company name
+- <p> for dates and locations
+- <ul> and <li> for bullet points
+- <p> for other content
+
+Do NOT include: \`\`\`html, \`\`\`, or any markdown formatting.
+Start directly with the HTML tags.`;
 
         return await callGeminiAPI(prompt);
     }
@@ -392,17 +410,38 @@ Return the optimized resume in HTML format with proper structure (use h1 for nam
 
         // Show loading state
         downloadBtn.disabled = true;
+        const originalText = downloadBtn.textContent;
         downloadBtn.textContent = 'Generating PDF...';
+
+        // Create a clean clone of the resume for PDF generation
+        const clone = element.cloneNode(true);
+        clone.style.cssText = `
+            background: white;
+            color: #000;
+            padding: 40px;
+            font-family: Georgia, 'Times New Roman', serif;
+            line-height: 1.6;
+            max-width: 8.5in;
+            margin: 0 auto;
+        `;
+
+        // Create temporary container
+        const tempContainer = document.createElement('div');
+        tempContainer.style.cssText = 'position: absolute; left: -9999px; top: 0;';
+        tempContainer.appendChild(clone);
+        document.body.appendChild(tempContainer);
 
         const opt = {
             margin: [0.5, 0.5, 0.5, 0.5],
-            filename: `AI_Optimized_Resume_${new Date().getTime()}.pdf`,
-            image: { type: 'jpeg', quality: 0.95 },
+            filename: `Optimized_Resume_${new Date().toISOString().split('T')[0]}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
             html2canvas: {
                 scale: 2,
                 useCORS: true,
                 logging: false,
-                backgroundColor: '#ffffff'
+                backgroundColor: '#ffffff',
+                windowWidth: 816, // 8.5 inches at 96 DPI
+                windowHeight: 1056 // 11 inches at 96 DPI
             },
             jsPDF: {
                 unit: 'in',
@@ -415,19 +454,21 @@ Return the optimized resume in HTML format with proper structure (use h1 for nam
 
         html2pdf()
             .set(opt)
-            .from(element)
+            .from(clone)
             .save()
             .then(() => {
-                // Reset button state
+                // Cleanup
+                document.body.removeChild(tempContainer);
                 downloadBtn.disabled = false;
-                downloadBtn.textContent = 'Download PDF';
+                downloadBtn.textContent = originalText;
                 console.log('✅ PDF downloaded successfully');
             })
             .catch((error) => {
                 console.error('❌ PDF generation error:', error);
                 alert('Error generating PDF. Please try again.');
+                document.body.removeChild(tempContainer);
                 downloadBtn.disabled = false;
-                downloadBtn.textContent = 'Download PDF';
+                downloadBtn.textContent = originalText;
             });
     }
 });

@@ -48,9 +48,28 @@ body {
 /* Results Grid for better organization */
 .results-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     gap: 1.5rem;
-    margin-bottom: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.results-grid .glass-panel {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 300px;
+}
+
+.results-grid .card-header {
+    flex-shrink: 0;
+}
+
+.results-grid .questions-list,
+.results-grid .suggestions-list,
+.results-grid .ats-score-content {
+    flex: 1;
+    overflow-y: auto;
+    max-height: 400px;
 }
 
 /* Cards */
