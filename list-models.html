@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>List Available Models</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+
+        .container {
+            background: #2a2a2a;
+            padding: 30px;
+            border-radius: 10px;
+        }
+
+        input,
+        button {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid #444;
+            background: #333;
+            color: #fff;
+            font-size: 16px;
+        }
+
+        button {
+            background: linear-gradient(to right, #3b82f6, #8b5cf6);
+            cursor: pointer;
+            border: none;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #333;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            max-height: 500px;
+            overflow-y: auto;
+            font-size: 14px;
+        }
+
+        .success {
+            color: #10b981;
+        }
+
+        .error {
+            color: #ef4444;
+        }
+
+        .model-item {
+            background: #444;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 3px solid #3b82f6;
+        }
+
+        .model-name {
+            font-weight: bold;
+            color: #60a5fa;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🔍 List Available Gemini Models</h1>
+        <p>This will show you which models are available for your API key</p>
+
+        <input type="password" id="apiKey" placeholder="Enter your Gemini API Key (AIza...)">
+
+        <button onclick="listModels('v1')">List Models (v1 API)</button>
+        <button onclick="listModels('v1beta')">List Models (v1beta API)</button>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        async function listModels(apiVersion) {
+            const apiKey = document.getElementById('apiKey').value.trim();
+            const resultDiv = document.getElementById('result');
+
+            if (!apiKey) {
+                resultDiv.innerHTML = '<span class="error">❌ Please enter an API key</span>';
+                return;
+            }
+
+            resultDiv.innerHTML = `🔵 Fetching available models from ${apiVersion} API...\n`;
+
+            const url = `https://generativelanguage.googleapis.com/${apiVersion}/models?key=${apiKey}`;
+
+            console.log('Fetching URL:', url);
+
+            try {
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                console.log('Response status:', response.status);
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    console.error('Error:', error);
+                    resultDiv.innerHTML = `<span class="error">❌ FAILED (${response.status})\n`;
+                    resultDiv.innerHTML += `Error: ${JSON.stringify(error, null, 2)}</span>`;
+                    return;
+                }
+
+                const data = await response.json();
+                console.log('Success:', data);
+
+                if (!data.models || data.models.length === 0) {
+                    resultDiv.innerHTML = '<span class="error">❌ No models found for this API key</span>';
+                    return;
+                }
+
+                let html = `<span class="success">✅ Found ${data.models.length} models:\n\n</span>`;
+
+                // Filter for models that support generateContent
+                const generateContentModels = data.models.filter(model =>
+                    model.supportedGenerationMethods &&
+                    model.supportedGenerationMethods.includes('generateContent')
+                );
+
+                html += `<strong>Models supporting generateContent (${generateContentModels.length}):</strong>\n\n`;
+
+                generateContentModels.forEach(model => {
+                    html += `<div class="model-item">`;
+                    html += `<div class="model-name">📦 ${model.name}</div>`;
+                    html += `Display Name: ${model.displayName || 'N/A'}\n`;
+                    html += `Description: ${model.description || 'N/A'}\n`;
+                    html += `Methods: ${model.supportedGenerationMethods.join(', ')}\n`;
+                    html += `</div>`;
+                });
+
+                if (generateContentModels.length === 0) {
+                    html += '<span class="error">⚠️ No models support generateContent method!</span>\n';
+                }
+
+                html += '\n<strong>All models:</strong>\n';
+                html += JSON.stringify(data, null, 2);
+
+                resultDiv.innerHTML = html;
+
+            } catch (error) {
+                console.error('Fetch error:', error);
+                resultDiv.innerHTML = `<span class="error">❌ Network Error\n${error.message}</span>`;
+            }
+        }
+    </script>
+</body>
+
+</html>

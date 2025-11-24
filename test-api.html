@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini API Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+
+        .container {
+            background: #2a2a2a;
+            padding: 30px;
+            border-radius: 10px;
+        }
+
+        input,
+        button {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid #444;
+            background: #333;
+            color: #fff;
+            font-size: 16px;
+        }
+
+        button {
+            background: linear-gradient(to right, #3b82f6, #8b5cf6);
+            cursor: pointer;
+            border: none;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #333;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .success {
+            color: #10b981;
+        }
+
+        .error {
+            color: #ef4444;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🧪 Gemini API Test</h1>
+        <p>Test your Gemini API key to see which models work</p>
+
+        <input type="password" id="apiKey" placeholder="Enter your Gemini API Key (AIza...)">
+
+        <button onclick="testAPI('gemini-pro')">Test: gemini-pro (v1)</button>
+        <button onclick="testAPI('gemini-1.5-pro')">Test: gemini-1.5-pro (v1beta)</button>
+        <button onclick="testAPI('gemini-1.5-flash')">Test: gemini-1.5-flash (v1beta)</button>
+        <button onclick="testAPI('gemini-1.5-flash-latest')">Test: gemini-1.5-flash-latest (v1beta)</button>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        async function testAPI(modelName) {
+            const apiKey = document.getElementById('apiKey').value.trim();
+            const resultDiv = document.getElementById('result');
+
+            if (!apiKey) {
+                resultDiv.innerHTML = '<span class="error">❌ Please enter an API key</span>';
+                return;
+            }
+
+            resultDiv.innerHTML = `🔵 Testing model: ${modelName}...\n`;
+
+            // Determine API version based on model
+            const apiVersion = modelName.includes('1.5') ? 'v1beta' : 'v1';
+            const url = `https://generativelanguage.googleapis.com/${apiVersion}/models/${modelName}:generateContent?key=${apiKey}`;
+
+            console.log('Testing URL:', url);
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: 'Say "Hello, this is a test!" in one sentence.'
+                            }]
+                        }]
+                    })
+                });
+
+                console.log('Response status:', response.status);
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    console.error('Error:', error);
+                    resultDiv.innerHTML += `<span class="error">❌ FAILED (${response.status})\n`;
+                    resultDiv.innerHTML += `Error: ${JSON.stringify(error, null, 2)}</span>`;
+                    return;
+                }
+
+                const data = await response.json();
+                console.log('Success:', data);
+
+                const text = data.candidates[0].content.parts[0].text;
+                resultDiv.innerHTML += `<span class="success">✅ SUCCESS!\n`;
+                resultDiv.innerHTML += `Model: ${modelName}\n`;
+                resultDiv.innerHTML += `API Version: ${apiVersion}\n`;
+                resultDiv.innerHTML += `Response: ${text}</span>`;
+
+            } catch (error) {
+                console.error('Fetch error:', error);
+                resultDiv.innerHTML += `<span class="error">❌ Network Error\n${error.message}</span>`;
+            }
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enigdos ATS Resume Rewriter</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <!-- PDF & DOCX Parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <!-- PDF Generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- Google Generative AI SDK -->
+    <script type="importmap">
+    {
+        "imports": {
+            "@google/generative-ai": "https://esm.run/@google/generative-ai"
+        }
+    }
+    </script>
+</head>
+
+<body>
+    <div class="background-gradient"></div>
+
+    <main class="container">
+        <header class="header">
+            <div class="logo">
+                <h1>Enigdos AI Resume Optimizer</h1>
+            </div>
+            <p class="subtitle">AI-Powered Resume Optimization & Interview Prep</p>
+        </header>
+
+        <!-- API Configuration -->
+        <div class="api-config-section">
+            <div class="card glass-panel">
+                <div class="card-header">
+                    <h2>⚙️ Gemini API Configuration</h2>
+                    <p>Enter your Google Gemini API key to enable AI-powered features</p>
+                </div>
+                <div class="api-input-wrapper">
+                    <input type="password" id="api-key-input" placeholder="Enter your Gemini API Key (AIza...)" />
+                    <button id="save-api-key-btn" class="secondary-button">Save Key</button>
+                    <span id="api-status" class="api-status"></span>
+                </div>
+                <p class="api-help">Get your free API key at <a href="https://aistudio.google.com/app/apikey"
+                        target="_blank">Google AI Studio</a></p>
+            </div>
+        </div>
+
+        <div class="grid-layout">
+            <!-- Input Section -->
+            <section class="input-section">
+                <!-- Step 1: Resume -->
+                <div class="card glass-panel">
+                    <div class="card-header">
+                        <h2>1. Existing Resume</h2>
+                        <p>Upload your current resume (PDF/DOCX/TXT).</p>
+                    </div>
+                    <div class="upload-area" id="drop-zone">
+                        <input type="file" id="file-input" accept=".pdf,.doc,.docx,.txt" hidden>
+                        <div class="upload-content">
+                            <p class="upload-text" id="file-name-display">Drag & drop or click to upload</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2: Job Description -->
+                <div class="card glass-panel">
+                    <div class="card-header">
+                        <h2>2. Target Job Description</h2>
+                        <p>Paste the full job posting below.</p>
+                    </div>
+                    <div class="textarea-wrapper">
+                        <textarea id="jd-input" placeholder="Paste Job Description here..."></textarea>
+                    </div>
+                </div>
+
+                <button id="process-btn" class="primary-button" disabled>
+                    <span class="btn-text">Analyze with AI</span>
+                    <span class="btn-loader hidden"></span>
+                </button>
+            </section>
+
+            <!-- Output Section -->
+            <section class="output-section">
+                <!-- Results Grid: ATS Score, Questions, Suggestions -->
+                <div class="results-grid">
+                    <!-- ATS Score Card -->
+                    <div class="card glass-panel" id="ats-score-card" style="display: none;">
+                        <div class="card-header">
+                            <h2>📊 ATS Match Score</h2>
+                        </div>
+                        <div class="ats-score-content">
+                            <div class="score-circle">
+                                <span id="ats-score-value">0</span>
+                                <span class="score-label">%</span>
+                            </div>
+                            <div id="ats-analysis" class="ats-analysis"></div>
+                        </div>
+                    </div>
+
+                    <!-- Interview Questions -->
+                    <div class="card glass-panel" id="interview-questions-card" style="display: none;">
+                        <div class="card-header">
+                            <h2>💼 Interview Questions</h2>
+                            <p>AI-generated questions for this role</p>
+                        </div>
+                        <div id="interview-questions-list" class="questions-list"></div>
+                    </div>
+
+                    <!-- Suggested Bullet Points -->
+                    <div class="card glass-panel" id="suggestions-card" style="display: none;">
+                        <div class="card-header">
+                            <h2>✨ Resume Improvements</h2>
+                            <p>AI-powered suggestions</p>
+                        </div>
+                        <div id="suggestions-list" class="suggestions-list"></div>
+                    </div>
+                </div>
+
+                <!-- Optimized Resume -->
+                <div class="card glass-panel full-height">
+                    <div class="card-header">
+                        <h2>📄 Optimized Resume</h2>
+                        <div class="actions">
+                            <button id="download-btn" class="secondary-button hidden">Download PDF</button>
+                        </div>
+                    </div>
+
+                    <div id="empty-state" class="empty-state">
+                        <p>Upload a resume and JD to see the AI-optimized result.</p>
+                    </div>
+
+                    <div id="output-container" class="hidden">
+                        <!-- Summary of Changes -->
+                        <div class="optimization-summary">
+                            <h3>AI Optimization Report</h3>
+                            <p><strong>Top Keywords Integrated:</strong> <span id="keywords-list"></span></p>
+                            <p><em>Note: Bullet points have been intelligently rewritten by AI to match the job
+                                    requirements.</em></p>
+                        </div>
+
+                        <!-- Resume Preview -->
+                        <div id="resume-preview" class="resume-preview">
+                            <!-- Dynamic Content -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script src="script.js?v=8"></script>
+</body>
+
+</html>
