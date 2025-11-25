@@ -210,7 +210,7 @@ JavaScript, Python, React, Node.js, AWS, Docker`;
                 navLinks.appendChild(startOverBtn);
             }
 
-            emptyState.classList.add('hidden');
+            // emptyState.classList.add('hidden'); // Removed as element no longer exists
 
             setLoading(false);
 
@@ -392,26 +392,26 @@ Start directly with the HTML tags.`;
         if (questions.length === 0) return;
 
         interviewQuestionsCard.style.display = 'block';
-        interviewQuestionsList.innerHTML = questions.map(q => `
-            <div class="question-item">
-                <div class="question-text">${q}</div>
-            </div>
-        `).join('');
+        // Clear any existing questions - we only want to show the button now
+        interviewQuestionsList.innerHTML = '';
 
-        // Add "Start Practice" button if not already present
-        if (!document.getElementById('startPracticeBtn')) {
-            const btn = document.createElement('button');
+        // Store questions for Manager round
+        window.aiQuestions = questions;
+
+        // Add "Practice interview questions" button if not already present
+        let btn = document.getElementById('startPracticeBtn');
+        if (!btn) {
+            btn = document.createElement('button');
             btn.id = 'startPracticeBtn';
             btn.className = 'primary-button';
             btn.style.marginTop = '1rem';
             btn.style.width = '100%';
-            btn.innerHTML = '<span>Start Interview Practice</span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>';
             btn.onclick = startInterviewPractice;
             interviewQuestionsCard.appendChild(btn);
         }
 
-        // Store questions for Manager round
-        window.aiQuestions = questions;
+        // Update button text
+        btn.innerHTML = '<span>Practice interview questions</span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>';
     }
 
     // --- Interview Practice Logic ---
@@ -651,6 +651,8 @@ Start directly with the HTML tags.`;
             .replace(/```html\n?/gi, '')
             .replace(/```\n?/g, '')
             .replace(/^\s*html\s*\n/gi, '')
+            // Fix bold markdown syntax
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
             .trim();
 
         // If the AI returned plain text instead of HTML, wrap it in basic HTML structure
@@ -763,7 +765,7 @@ Start directly with the HTML tags.`;
                 if (node.nodeType === Node.TEXT_NODE) {
                     const text = node.textContent.trim();
                     if (text) {
-                        addText(text, 11);
+                        addText(text, 9); // Reduced from 11
                     }
                 } else if (node.nodeType === Node.ELEMENT_NODE) {
                     const tagName = node.tagName.toLowerCase();
@@ -771,32 +773,32 @@ Start directly with the HTML tags.`;
                     switch (tagName) {
                         case 'h1':
                             addSpace(5);
-                            addText(node.textContent, 18, true);
-                            addSpace(10);
+                            addText(node.textContent, 15, true); // Changed to 15
+                            addSpace(2); // Reduced from 10
                             break;
                         case 'h2':
                             addSpace(12);
-                            addText(node.textContent.toUpperCase(), 13, true);
+                            addText(node.textContent.toUpperCase(), 11, true);
                             addSpace(8);
                             // Add a line under section headers
                             doc.setLineWidth(0.5);
                             doc.line(margin, yPosition - 5, pageWidth - margin, yPosition - 5);
-                            addSpace(5);
+                            addSpace(2); // Reduced from 5
                             break;
                         case 'h3':
                             addSpace(8);
-                            addText(node.textContent, 12, true);
-                            addSpace(5);
+                            addText(node.textContent, 10, true);
+                            addSpace(2); // Reduced from 5
                             break;
                         case 'p':
-                            addText(node.textContent, 11);
+                            addText(node.textContent, 9); // Reduced from 11
                             addSpace(5);
                             break;
                         case 'ul':
                             Array.from(node.children).forEach(li => {
                                 if (li.tagName.toLowerCase() === 'li') {
                                     const bulletText = '• ' + li.textContent.trim();
-                                    addText(bulletText, 11);
+                                    addText(bulletText, 9); // Reduced from 11
                                     addSpace(3);
                                 }
                             });
@@ -804,11 +806,11 @@ Start directly with the HTML tags.`;
                             break;
                         case 'strong':
                         case 'b':
-                            addText(node.textContent, 11, true);
+                            addText(node.textContent, 9, true); // Reduced from 11
                             break;
                         case 'em':
                         case 'i':
-                            addText(node.textContent, 11, false, true);
+                            addText(node.textContent, 9, false, true); // Reduced from 11
                             break;
                         case 'br':
                             addSpace(5);

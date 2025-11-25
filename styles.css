@@ -61,14 +61,17 @@ body {
 .results-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-    gap: 1.5rem;
+    gap: 2rem;
     margin-bottom: 2rem;
+    align-items: start;
+    /* Prevent cards from stretching to match height if content differs */
 }
 
 /* Ensure full width for optimized resume */
 #optimized-resume-card {
     grid-column: 1 / -1;
-    min-height: 800px;
+    min-height: auto;
+    /* Allow height to grow with content */
 }
 
 @keyframes fadeIn {
@@ -86,20 +89,9 @@ body {
 .results-grid .glass-panel {
     display: flex;
     flex-direction: column;
-    height: 100%;
-    min-height: 300px;
-}
-
-.results-grid .card-header {
-    flex-shrink: 0;
-}
-
-.results-grid .questions-list,
-.results-grid .suggestions-list,
-.results-grid .ats-score-content {
-    flex: 1;
-    overflow-y: auto;
-    max-height: 400px;
+    height: auto;
+    /* Allow natural height */
+    min-height: 250px;
 }
 
 /* Cards */
@@ -107,18 +99,32 @@ body {
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: 16px;
-    padding: 1.5rem;
+    padding: 2rem;
+    /* Increased padding */
+    margin-bottom: 0;
+    /* Margin handled by grid gap */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    backdrop-filter: blur(12px);
+}
+
+.card-header {
     margin-bottom: 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding-bottom: 1rem;
 }
 
 .card-header h2 {
-    font-size: 1.1rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-main);
     margin-bottom: 0.5rem;
+    letter-spacing: -0.025em;
 }
 
 .card-header p {
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     color: var(--text-muted);
+    line-height: 1.5;
 }
 
 /* Inputs */
@@ -178,10 +184,12 @@ textarea {
 .resume-preview {
     background: white;
     color: #1a1a1a;
-    padding: 50px;
+    padding: 40px;
+    /* Reduced padding */
     min-height: 600px;
     font-family: 'Georgia', 'Times New Roman', serif;
-    line-height: 1.6;
+    line-height: 1.4;
+    /* Reduced line height */
     border-radius: 8px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
     border: 1px solid #e0e0e0;
@@ -191,34 +199,51 @@ textarea {
 .resume-preview h2,
 .resume-preview h3 {
     color: #2c3e50;
-    margin-top: 1.5rem;
-    margin-bottom: 0.75rem;
+    margin-top: 1rem;
+    /* Reduced top margin */
+    margin-bottom: 0.5rem;
+    /* Reduced bottom margin */
 }
 
 .resume-preview h1 {
-    font-size: 28px;
+    font-size: 24px;
+    /* Slightly smaller */
     text-align: center;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.25rem;
+    margin-top: 0;
 }
 
 .resume-preview h2 {
-    font-size: 18px;
+    font-size: 16px;
+    /* Slightly smaller */
     border-bottom: 2px solid #3b82f6;
-    padding-bottom: 0.25rem;
+    padding-bottom: 0.15rem;
+    margin-top: 1.2rem;
+}
+
+.resume-preview h3 {
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 0.25rem;
 }
 
 .resume-preview ul {
-    margin: 0.5rem 0 1rem 1.5rem;
+    margin: 0.25rem 0 0.5rem 1.2rem;
+    /* Tighter margins */
     padding: 0;
 }
 
 .resume-preview li {
-    margin-bottom: 0.5rem;
-    line-height: 1.6;
+    margin-bottom: 0.25rem;
+    /* Reduced item spacing */
+    line-height: 1.4;
+    font-size: 11pt;
+    /* Standard readable size */
 }
 
 .resume-preview p {
-    margin: 0.5rem 0;
+    margin: 0.25rem 0;
+    font-size: 11pt;
 }
 
 .resume-header-text {
@@ -321,46 +346,120 @@ li {
     text-decoration: underline;
 }
 
-/* ATS Score Card */
+/* ATS Score Card Design */
+#ats-score-card {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+#ats-score-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+}
+
 .ats-score-content {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 2rem;
+    gap: 1.5rem;
     padding: 1rem 0;
 }
 
 .score-circle {
-    position: relative;
     width: 120px;
     height: 120px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    background: conic-gradient(from 0deg, #3b82f6, #8b5cf6, #3b82f6);
     display: flex;
     align-items: center;
     justify-content: center;
-    flex-direction: column;
-    box-shadow: 0 8px 32px rgba(59, 130, 246, 0.3);
+    position: relative;
+    box-shadow: 0 0 30px rgba(59, 130, 246, 0.3);
 }
 
-#ats-score-value {
+.score-circle::after {
+    content: '';
+    position: absolute;
+    width: 110px;
+    height: 110px;
+    background: var(--bg-card);
+    border-radius: 50%;
+}
+
+.score-circle span {
+    position: relative;
+    z-index: 2;
     font-size: 2.5rem;
-    font-weight: 700;
-    color: white;
+    font-weight: 800;
+    background: linear-gradient(135deg, #fff 0%, #cbd5e1 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 .score-label {
-    font-size: 1rem;
-    color: rgba(255, 255, 255, 0.8);
+    font-size: 1.2rem !important;
+    margin-left: 2px;
 }
 
 .ats-analysis {
-    flex: 1;
-    font-size: 0.95rem;
+    text-align: center;
+    color: var(--text-secondary);
     line-height: 1.6;
-    color: var(--text-muted);
+    font-size: 0.95rem;
 }
 
-/* Interview Questions */
+/* Keywords Tags */
+.keywords-container {
+    width: 100%;
+    text-align: left;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.keywords-container strong {
+    display: block;
+    margin-bottom: 0.8rem;
+    color: var(--text-main);
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.keywords-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.skill-tag {
+    background: rgba(59, 130, 246, 0.15);
+    color: #60a5fa;
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    transition: all 0.2s ease;
+}
+
+.skill-tag:hover {
+    background: rgba(59, 130, 246, 0.25);
+    transform: translateY(-1px);
+}
+
+/* Interview Questions Card */
+#interview-questions-card {
+    border-top: 4px solid #10b981;
+}
+
 .questions-list {
     display: flex;
     flex-direction: column;
@@ -368,21 +467,19 @@ li {
 }
 
 .question-item {
-    background: rgba(15, 23, 42, 0.5);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 1rem;
-    transition: transform 0.2s, border-color 0.2s;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 1.2rem;
+    border-radius: 12px;
+    transition: all 0.2s ease;
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
 }
 
 .question-item:hover {
+    background: rgba(255, 255, 255, 0.06);
     transform: translateX(4px);
-    border-color: var(--primary);
-}
-
-.question-number {
-    display: inline-block;
-    background: linear-gradient(to right, #3b82f6, #8b5cf6);
     color: white;
     font-weight: 600;
     padding: 0.25rem 0.75rem;
